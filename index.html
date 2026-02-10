@@ -1,4 +1,18 @@
 <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                body {
+                  background-color: white; /* Ensure the iframe has a white background */
+                }
+
+                
+              </style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -47,6 +61,25 @@
             padding: 6px 12px;
             border-radius: 15px;
             z-index: 30;
+        }
+
+        .sound-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            z-index: 31;
+            transition: transform 0.2s ease;
+        }
+
+        .sound-btn:hover {
+            transform: scale(1.1);
         }
 
         .click-message {
@@ -205,6 +238,15 @@
             user-select: none;
         }
 
+        .player-mouth.black-hole {
+            font-size: 6rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, #000 0%, #333 70%, #000 100%);
+            color: transparent;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8),
+                        inset 0 0 40px rgba(0, 0, 0, 0.9);
+        }
+
         .player-mouth:active {
             cursor: grabbing;
         }
@@ -214,6 +256,18 @@
             font-weight: bold;
             color: #ffd700;
             margin-top: 5px;
+        }
+
+        .player-name.special {
+            color: #ff0000;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            animation: pulseRed 0.5s infinite;
+        }
+
+        @keyframes pulseRed {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         .game-btn {
@@ -349,6 +403,10 @@
                 font-size: 2.5rem;
             }
             
+            .player-mouth.black-hole {
+                font-size: 5rem;
+            }
+            
             .game-100-clicks h1 {
                 font-size: 4rem;
             }
@@ -368,7 +426,12 @@
     </style>
 </head>
 <body>
+    <audio id="backgroundMusic" loop>
+        <source src="123.mp3" type="audio/mpeg">
+    </audio>
+    
     <div class="counter" id="counter">Кликов: 0</div>
+    <button class="sound-btn" id="soundBtn">🔊</button>
     <div class="click-message" id="clickMessage"></div>
     <div class="main-text" id="mainText">сосал?</div>
     <div class="click-prompt" id="clickPrompt">нажми</div>
@@ -380,12 +443,13 @@
     <div class="game-screen" id="gameScreen">
         <div class="game-header">
             <div class="game-score" id="gameScore">Очки: 0</div>
+            <button class="sound-btn" id="gameSoundBtn">🔊</button>
             <div class="game-misses" id="gameMisses">Промахи: 0/3</div>
         </div>
         <div class="game-area" id="gameArea">
             <div class="player-container" id="playerContainer">
                 <div class="player-mouth" id="playerMouth">👄</div>
-                <div class="player-name">Жека</div>
+                <div class="player-name" id="playerName">Жека</div>
             </div>
         </div>
         <button class="game-btn" id="gameExitBtn">Выйти</button>
@@ -409,6 +473,34 @@
     </div>
 
     <script>
+        const audio = document.getElementById('backgroundMusic');
+        const soundBtn = document.getElementById('soundBtn');
+        const gameSoundBtn = document.getElementById('gameSoundBtn');
+        let isMuted = localStorage.getItem('isMuted') === 'true' || false;
+        
+        // Инициализация кнопки звука
+        function updateSoundButton() {
+            soundBtn.textContent = isMuted ? '🔇' : '🔊';
+            gameSoundBtn.textContent = isMuted ? '🔇' : '🔊';
+            audio.muted = isMuted;
+        }
+        
+        // Переключение звука
+        function toggleSound() {
+            isMuted = !isMuted;
+            localStorage.setItem('isMuted', isMuted);
+            updateSoundButton();
+        }
+        
+        soundBtn.addEventListener('click', toggleSound);
+        gameSoundBtn.addEventListener('click', toggleSound);
+        
+        // Автовоспроизведение после первого клика
+        document.addEventListener('click', function initAudio() {
+            audio.play().catch(e => console.log('Audio play error:', e));
+            document.removeEventListener('click', initAudio);
+        }, { once: true });
+
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = Telegram.WebApp;
             tg.ready();
@@ -690,10 +782,12 @@
         let playerX = 0;
         let playerContainer = null;
         let fruits = [];
+        let bananaCount = 0;
+        let bombMode = false;
+        let bombTimer = null;
 
         gameArea.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            isTouching = true;
         });
         
         gameArea.addEventListener('touchmove', (e) => {
@@ -712,7 +806,6 @@
         });
         
         gameArea.addEventListener('touchend', (e) => {
-            isTouching = false;
             e.preventDefault();
         });
 
@@ -727,6 +820,8 @@
             score = 0;
             misses = 0;
             speed = 3;
+            bananaCount = 0;
+            bombMode = false;
             gameActive = true;
             
             gameScore.textContent = `Очки: ${score}`;
@@ -735,7 +830,7 @@
             gameArea.innerHTML = `
                 <div class="player-container" id="playerContainer">
                     <div class="player-mouth" id="playerMouth">👄</div>
-                    <div class="player-name">Жека</div>
+                    <div class="player-name" id="playerName">Жека</div>
                 </div>
             `;
             
@@ -748,7 +843,11 @@
             
             gameScreen.classList.add('active');
             
-            fruitInterval = setInterval(createFruit, 900);
+            setTimeout(() => {
+                if (gameActive) {
+                    fruitInterval = setInterval(createFruit, 690);
+                }
+            }, 300);
             
             setTimeout(() => {
                 if (gameActive && speed < maxSpeed) {
@@ -761,6 +860,8 @@
 
         function exitGame() {
             clearInterval(fruitInterval);
+            if (bombTimer) clearTimeout(bombTimer);
+            bombMode = false;
             gameActive = false;
             gameScreen.classList.remove('active');
             fruits = [];
@@ -768,16 +869,43 @@
         }
 
         function createFruit() {
-            if (!gameActive) return;
+            if (!gameActive || !gameArea) return;
+            
+            const areaWidth = gameArea.offsetWidth;
+            if (areaWidth < 50) return;
+            
+            let fruitType;
+            const rand = Math.random();
+            
+            if (rand < 0.005 && !bombMode) {
+                fruitType = 'bomb';
+            } 
+            else if (bombMode || rand < 0.055) {
+                fruitType = 'eggplant';
+            }
+            else if (bananaCount >= 2) {
+                fruitType = 'peach';
+                bananaCount = 0;
+            }
+            else {
+                fruitType = 'banana';
+                bananaCount++;
+            }
             
             const fruit = document.createElement('div');
-            const isEggplant = Math.random() < 0.05;
-            
             fruit.className = 'fruit';
-            fruit.innerHTML = isEggplant ? '🍆' : '🍌';
             
-            const maxX = gameArea.offsetWidth - 30;
-            const posX = Math.floor(Math.random() * maxX);
+            switch(fruitType) {
+                case 'banana': fruit.innerHTML = '🍌'; break;
+                case 'peach': fruit.innerHTML = '🍑'; break;
+                case 'bomb': fruit.innerHTML = '💣'; break;
+                case 'eggplant': fruit.innerHTML = '🍆'; break;
+            }
+            
+            fruit.dataset.type = fruitType;
+            
+            const maxX = areaWidth - 30;
+            const posX = Math.floor(Math.random() * Math.max(10, maxX));
             
             fruit.style.left = `${posX}px`;
             fruit.style.top = '0px';
@@ -788,9 +916,31 @@
                 element: fruit,
                 x: posX,
                 y: 0,
-                isEggplant: isEggplant,
+                type: fruitType,
                 caught: false
             });
+        }
+
+        function activateBombMode() {
+            bombMode = true;
+            const playerMouth = document.getElementById('playerMouth');
+            const playerName = document.getElementById('playerName');
+            if (playerMouth) playerMouth.classList.add('black-hole');
+            if (playerName) {
+                playerName.textContent = "ЖЕКА РАСКРЫЛ ОЧКО";
+                playerName.classList.add('special');
+            }
+            
+            bombTimer = setTimeout(() => {
+                bombMode = false;
+                const playerMouth = document.getElementById('playerMouth');
+                const playerName = document.getElementById('playerName');
+                if (playerMouth) playerMouth.classList.remove('black-hole');
+                if (playerName) {
+                    playerName.textContent = "Жека";
+                    playerName.classList.remove('special');
+                }
+            }, 5000);
         }
 
         function gameLoop() {
@@ -818,10 +968,24 @@
                 if (fruit.y + 30 >= areaHeight - 50 && 
                     !(fruitRight < containerLeft || fruitLeft > containerRight)) {
                     
-                    if (fruit.isEggplant) {
-                        score += 100;
-                    } else {
-                        score += 10;
+                    switch(fruit.type) {
+                        case 'banana':
+                            score += bombMode ? 20 : 10;
+                            break;
+                        case 'eggplant':
+                            score += 100;
+                            break;
+                        case 'peach':
+                            misses++;
+                            gameMisses.textContent = `Промахи: ${misses}/3`;
+                            if (misses >= 3) {
+                                loseGame();
+                                return;
+                            }
+                            break;
+                        case 'bomb':
+                            activateBombMode();
+                            break;
                     }
                     
                     gameScore.textContent = `Очки: ${score}`;
@@ -846,12 +1010,15 @@
                 }
                 
                 if (fruit.y > areaHeight) {
-                    if (!fruit.isEggplant) {
-                        misses++;
-                        gameMisses.textContent = `Промахи: ${misses}/3`;
-                        
-                        if (misses >= 3) {
-                            loseGame();
+                    if (fruit.type === 'banana' || fruit.type === 'peach') {
+                        if (fruit.type === 'banana') {
+                            misses++;
+                            gameMisses.textContent = `Промахи: ${misses}/3`;
+                            
+                            if (misses >= 3) {
+                                loseGame();
+                                return;
+                            }
                         }
                     }
                     
@@ -867,12 +1034,16 @@
 
         function loseGame() {
             clearInterval(fruitInterval);
+            if (bombTimer) clearTimeout(bombTimer);
+            bombMode = false;
             gameActive = false;
             gameOver.style.display = 'flex';
         }
 
         function winGame() {
             clearInterval(fruitInterval);
+            if (bombTimer) clearTimeout(bombTimer);
+            bombMode = false;
             gameActive = false;
             gameWin.style.display = 'flex';
             createWinConfetti();
@@ -907,6 +1078,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            updateSoundButton();
             createParticles();
             setTimeout(() => {
                 mainText.classList.add('animated');
@@ -915,3 +1087,17 @@
     </script>
 </body>
 </html>
+
+
+
+              <script>
+                              function toggleSound() {
+    isMuted = !isMuted;
+    localStorage.setItem('isMuted', isMuted);
+    updateSoundButton();
+}
+
+
+              </script>
+                        </body>
+                        </html>
