@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сосал?</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-size: 200% 200%;
+            background-position: 0% 50%;
+            overflow: hidden;
+            position: relative;
+            will-change: background-position;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            z-index: 1;
+            will-change: transform, opacity;
+        }
+
+        .counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            color: #ffd700;
+            font-size: 1.8rem;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 30;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.5s ease;
+        }
+
+        .counter.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .click-message {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 0, 0, 0.8);
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.5);
+            z-index: 35;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .click-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .main-text {
+            font-size: 6rem;
+            font-weight: 900;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            z-index: 10;
+            letter-spacing: -3px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .main-text.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .main-text.animated {
+            animation: textPulse 2.5s ease-in-out infinite alternate,
+                       textGlow 4s ease-in-out infinite;
+        }
+
+        @keyframes textPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.03); }
+        }
+
+        @keyframes textGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 255, 0.6), 0 0 60px rgba(255, 0, 0, 0.5); }
+            50% { text-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 60px rgba(255, 255, 255, 0.8), 0 0 90px rgba(255, 0, 0, 0.7), 0 0 120px rgba(255, 0, 0, 0.6); }
+        }
+
+        .main-text:hover {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+            transform: translate3d(0, 0, 0);
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .click-prompt {
+            position: absolute;
+            top: calc(50% + 80px);
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            z-index: 9;
+        }
+
+        .click-prompt.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .banana-btn {
+            position: absolute;
+            bottom: 100px;
+            padding: 15px 35px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ffd700, #ffba00);
+            color: #000;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease;
+            z-index: 25;
+            user-select: none;
+        }
+
+        .banana-btn.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .banana-btn.animated {
+            animation: bananaBounce 2s ease-in-out infinite;
+        }
+
+        .banana-btn:hover {
+            transform: scale(1.1) rotate(-5deg);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.8),
+                        0 0 40px rgba(255, 215, 0, 0.6);
+        }
+
+        .banana-btn:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes bananaBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 20;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        footer.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        footer a {
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        footer a:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 6px 25px rgba(238, 90, 36, 0.6);
+            background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+        }
+
+        .game-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .game-header {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .game-score {
+            background: rgba(0, 0, 0, 0.4);
+            color: #ffd700;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-misses {
+            background: rgba(0, 0, 0, 0.4);
+            color: #ff6b6b;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-area {
+            width: 90%;
+            max-width: 400px;
+            aspect-ratio: 3/4;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .fruit {
+            position: absolute;
+            font-size: 2.5rem;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .player-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .player-mouth {
+            font-size: 4rem;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s ease;
+        }
+
+        .player-mouth:active {
+            cursor: grabbing;
+        }
+
+        .player-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            margin-top: 5px;
+        }
+
+        .game-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(238, 90, 36, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .game-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(238, 90, 36, 0.8);
+        }
+
+        .game-btn:active {
+            transform: scale(0.98);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .game-over h1 {
+            font-size: 6rem;
+            color: #ff0000;
+            text-shadow: 0 0 30px rgba(255, 0, 0, 0.8),
+                         0 0 60px rgba(255, 0, 0, 0.6);
+            margin-bottom: 30px;
+            animation: gameOverShake 0.5s ease-in-out infinite;
+        }
+
+        @keyframes gameOverShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .game-over p {
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 40px;
+        }
+
+        .game-win {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .game-win h1 {
+            font-size: 5rem;
+            color: #000;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            margin-bottom: 10px;
+        }
+
+        .game-win p {
+            font-size: 1.8rem;
+            color: #000;
+            margin-bottom: 40px;
+        }
+
+        .game-100-clicks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .game-100-clicks h1 {
+            font-size: 8rem;
+            color: #ff00ff;
+            text-shadow: 0 0 40px rgba(255, 0, 255, 0.8),
+                         0 0 80px rgba(255, 0, 255, 0.6);
+            margin-bottom: 50px;
+            animation: textRainbow 3s linear infinite;
+        }
+
+        @keyframes textRainbow {
+            0% { color: #ff0000; }
+            16% { color: #ff7f00; }
+            33% { color: #ffff00; }
+            50% { color: #00ff00; }
+            66% { color: #0000ff; }
+            83% { color: #4b0082; }
+            100% { color: #9400d3; }
+        }
+
+        .game-100-clicks .close-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(238, 90, 36, 0.6);
+        }
+
+        .game-100-clicks .close-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(238, 90, 36, 0.8);
+        }
+
+        @media (max-width: 480px) {
+            .main-text {
+                font-size: 4rem;
+                letter-spacing: -2px;
+            }
+            
+            .counter, .click-message {
+                font-size: 1.4rem;
+                padding: 8px 15px;
+            }
+            
+            .click-prompt {
+                font-size: 1.5rem;
+                top: calc(50% + 60px);
+            }
+            
+            .banana-btn {
+                bottom: 80px;
+                padding: 12px 25px;
+                font-size: 1.2rem;
+            }
+            
+            footer a {
+                font-size: 1rem;
+                padding: 8px 16px;
+            }
+            
+            .player-mouth {
+                font-size: 3rem;
+            }
+            
+            .game-over h1 {
+                font-size: 4rem;
+            }
+            
+            .game-over p {
+                font-size: 1.4rem;
+            }
+            
+            .game-win h1 {
+                font-size: 3.5rem;
+            }
+            
+            .game-win p {
+                font-size: 1.6rem;
+            }
+            
+            .game-100-clicks h1 {
+                font-size: 5rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .main-text {
+                font-size: 3.5rem;
+            }
+            
+            .banana-btn {
+                bottom: 70px;
+            }
+            
+            .click-prompt {
+                font-size: 1.3rem;
+            }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            border-radius: 0;
+            animation: confettiFall 5s ease-in-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="counter" id="counter">Кликов: 0</div>
+    <div class="click-message" id="clickMessage"></div>
+    <div class="main-text" id="mainText">сосал?</div>
+    <div class="click-prompt" id="clickPrompt">нажми</div>
+    <button class="banana-btn" id="bananaBtn">🍌 Забананиться</button>
+    <footer>
+        <a href="https://t.me/Adolw_Hitler" target="_blank">имени Данила Зайцева</a>
+    </footer>
+
+    <div class="game-screen" id="gameScreen">
+        <div class="game-header">
+            <div class="game-score" id="gameScore">Очки: 0</div>
+            <div class="game-misses" id="gameMisses">Промахи: 0/3</div>
+        </div>
+        <div class="game-area" id="gameArea">
+            <div class="player-container" id="playerContainer">
+                <div class="player-mouth" id="playerMouth">👄</div>
+                <div class="player-name">Жека</div>
+            </div>
+        </div>
+        <button class="game-btn" id="gameExitBtn">Выйти</button>
+        
+        <div class="game-over" id="gameOver">
+            <h1>ты соснул.</h1>
+            <p>вы проиграли</p>
+            <button class="game-btn" id="restartBtn">Ещё раз</button>
+        </div>
+        
+        <div class="game-win" id="gameWin">
+            <h1>Жека соснул</h1>
+            <p>вы победили</p>
+            <button class="game-btn" id="restartWinBtn">Ещё раз</button>
+        </div>
+    </div>
+
+    <div class="game-100-clicks" id="hundredClicksScreen">
+        <h1>Жека гей</h1>
+        <button class="close-btn" id="closeHundredClicks">Закрыть</button>
+    </div>
+
+    <script>
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            
+            const body = document.body;
+            const mainText = document.getElementById('mainText');
+            const footer = document.querySelector('footer');
+            const gameScreen = document.getElementById('gameScreen');
+            
+            if (tg.colorScheme === 'dark') {
+                body.style.background = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+                gameScreen.style.background = 'linear-gradient(135deg, #1a1a2e, #2c3e50)';
+            }
+        }
+
+        let clickCount = 0;
+        const counterElement = document.getElementById('counter');
+        const clickMessageElement = document.getElementById('clickMessage');
+        const mainText = document.getElementById('mainText');
+        const clickPrompt = document.getElementById('clickPrompt');
+        const body = document.body;
+        const bananaBtn = document.getElementById('bananaBtn');
+        const footerEl = document.querySelector('footer');
+        const hundredClicksScreen = document.getElementById('hundredClicksScreen');
+        const closeHundredClicks = document.getElementById('closeHundredClicks');
+        let particleAnimationId = null;
+        let particles = [];
+        let gradientPosition = 0;
+        let gradientDirection = 1;
+        let isAnimating = false;
+
+        const clickMessages = {
+            10: "ты че, пёс?",
+            25: "тебе делать нехуй?",
+            50: "может харе?",
+            75: "уроки сделал?",
+            100: "Жека гей"
+        };
+
+        mainText.addEventListener('click', () => {
+            clickCount++;
+            counterElement.textContent = `Кликов: ${clickCount}`;
+            counterElement.style.animation = 'none';
+            setTimeout(() => {
+                counterElement.style.animation = 'counterPop 0.3s ease';
+            }, 10);
+            
+            if (clickMessages[clickCount]) {
+                showClickMessage(clickMessages[clickCount]);
+            }
+            
+            if (clickCount >= 100) {
+                showHundredClicksScreen();
+            }
+            
+            createConfetti();
+            
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+        });
+
+        function showClickMessage(message) {
+            clickMessageElement.textContent = message;
+            clickMessageElement.classList.remove('show');
+            void clickMessageElement.offsetWidth;
+            clickMessageElement.classList.add('show');
+            
+            setTimeout(() => {
+                clickMessageElement.classList.remove('show');
+            }, 3000);
+        }
+
+        function showHundredClicksScreen() {
+            hundredClicksScreen.style.display = 'flex';
+            createHugeConfetti();
+        }
+
+        closeHundredClicks.addEventListener('click', () => {
+            hundredClicksScreen.style.display = 'none';
+        });
+
+        function createHugeConfetti() {
+            const colors = ['#ff0000', '#ff6b6b', '#ee5a24', '#ffd700', '#4caf50', '#2196f3', '#9c27b0', '#ff00ff'];
+            
+            for (let i = 0; i < 300; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                const size = Math.random() * 15 + 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const posX = Math.random() * window.innerWidth;
+                const posY = -100;
+                
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size * 1.5}px`;
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${posX}px`;
+                confetti.style.top = `${posY}px`;
+                confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                
+                body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        function animateGradient() {
+            gradientPosition += 0.15 * gradientDirection;
+            
+            if (gradientPosition >= 100 || gradientPosition <= 0) {
+                gradientDirection *= -1;
+            }
+            
+            body.style.backgroundPosition = `${gradientPosition}% 50%`;
+            
+            if (isAnimating) {
+                requestAnimationFrame(animateGradient);
+            }
+        }
+
+        function createParticles() {
+            const maxParticles = 4;
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            for (let i = 0; i < maxParticles; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 100 + 50;
+                const side = Math.floor(Math.random() * 4);
+                let x, y, speedX, speedY;
+                
+                switch(side) {
+                    case 0:
+                        x = Math.random() * viewportWidth;
+                        y = viewportHeight + size;
+                        speedX = (Math.random() - 0.5) * 1.5;
+                        speedY = -(Math.random() * 1.5 + 0.8);
+                        break;
+                    case 1:
+                        x = -size;
+                        y = Math.random() * viewportHeight;
+                        speedX = Math.random() * 1.5 + 0.8;
+                        speedY = (Math.random() - 0.5) * 0.8;
+                        break;
+                    case 2:
+                        x = viewportWidth + size;
+                        y = Math.random() * viewportHeight;
+                        speedX = -(Math.random() * 1.5 + 0.8);
+                        speedY = (Math.random() - 0.5) * 0.8;
+                        break;
+                    case 3:
+                        x = Math.random() * viewportWidth;
+                        y = -size;
+                        speedX = (Math.random() - 0.5) * 1.5;
+                        speedY = Math.random() * 1.5 + 0.8;
+                        break;
+                }
+                
+                const opacity = Math.random() * 0.3 + 0.15;
+                
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.transform = `translate(${x}px, ${y}px)`;
+                particle.style.opacity = opacity;
+                
+                body.appendChild(particle);
+                
+                particles.push({
+                    element: particle,
+                    x: x,
+                    y: y,
+                    speedX: speedX,
+                    speedY: speedY,
+                    size: size,
+                    opacity: opacity
+                });
+            }
+            
+            isAnimating = true;
+            particleAnimationId = requestAnimationFrame(animateParticles);
+        }
+
+        function animateParticles() {
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+            
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                
+                p.element.style.transform = `translate(${p.x}px, ${p.y}px)`;
+                
+                const buffer = 200;
+                
+                if (p.x < -buffer || p.x > viewportWidth + buffer || p.y < -buffer || p.y > viewportHeight + buffer) {
+                    const side = Math.floor(Math.random() * 4);
+                    
+                    switch(side) {
+                        case 0:
+                            p.x = Math.random() * viewportWidth;
+                            p.y = viewportHeight + p.size;
+                            p.speedX = (Math.random() - 0.5) * 1.5;
+                            p.speedY = -(Math.random() * 1.5 + 0.8);
+                            break;
+                        case 1:
+                            p.x = -p.size;
+                            p.y = Math.random() * viewportHeight;
+                            p.speedX = Math.random() * 1.5 + 0.8;
+                            p.speedY = (Math.random() - 0.5) * 0.8;
+                            break;
+                        case 2:
+                            p.x = viewportWidth + p.size;
+                            p.y = Math.random() * viewportHeight;
+                            p.speedX = -(Math.random() * 1.5 + 0.8);
+                            p.speedY = (Math.random() - 0.5) * 0.8;
+                            break;
+                        case 3:
+                            p.x = Math.random() * viewportWidth;
+                            p.y = -p.size;
+                            p.speedX = (Math.random() - 0.5) * 1.5;
+                            p.speedY = Math.random() * 1.5 + 0.8;
+                            break;
+                    }
+                }
+            });
+            
+            if (isAnimating) {
+                particleAnimationId = requestAnimationFrame(animateParticles);
+            }
+        }
+
+        function stopMainAnimations() {
+            isAnimating = false;
+            
+            particles.forEach(p => {
+                if (p.element.parentNode) {
+                    body.removeChild(p.element);
+                }
+            });
+            particles = [];
+            
+            mainText.classList.remove('animated');
+            bananaBtn.classList.remove('animated');
+        }
+
+        function resumeMainAnimations() {
+            createParticles();
+            
+            setTimeout(() => {
+                mainText.classList.add('animated');
+            }, 100);
+            
+            setTimeout(() => {
+                bananaBtn.classList.add('animated');
+            }, 300);
+        }
+
+        function createConfetti() {
+            const colors = ['#ff0000', '#ff6b6b', '#ee5a24', '#ffd700', '#4caf50'];
+            const rect = mainText.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                const size = Math.random() * 6 + 3;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const posX = centerX + (Math.random() - 0.5) * 150;
+                
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size * 1.5}px`;
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${posX}px`;
+                confetti.style.top = `${rect.top}px`;
+                confetti.style.animationDuration = `${Math.random() * 2 + 1.5}s`;
+                
+                body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }
+        }
+
+        const gameScreen = document.getElementById('gameScreen');
+        const gameArea = document.getElementById('gameArea');
+        const gameScore = document.getElementById('gameScore');
+        const gameMisses = document.getElementById('gameMisses');
+        const gameExitBtn = document.getElementById('gameExitBtn');
+        const gameOver = document.getElementById('gameOver');
+        const gameWin = document.getElementById('gameWin');
+        const restartBtn = document.getElementById('restartBtn');
+        const restartWinBtn = document.getElementById('restartWinBtn');
+
+        let score = 0;
+        let misses = 0;
+        let gameActive = false;
+        let fruitInterval;
+        let speed = 3;
+        let maxSpeed = 10;
+        let playerX = 0;
+        let playerContainer = null;
+        let fruits = [];
+        let gameInitialized = false;
+
+        function initializeGame() {
+            if (gameInitialized) return;
+            
+            const areaWidth = gameArea.offsetWidth;
+            const areaHeight = gameArea.offsetHeight;
+            
+            console.log(`Game area initialized: ${areaWidth}x${areaHeight}`);
+            
+            gameInitialized = true;
+        }
+
+        gameArea.addEventListener('mousemove', (e) => {
+            if (!gameActive) return;
+            
+            const rect = gameArea.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            
+            const containerWidth = playerContainer.offsetWidth;
+            const maxX = gameArea.offsetWidth - containerWidth / 2;
+            
+            playerX = Math.max(containerWidth / 2, Math.min(mouseX, maxX));
+            playerContainer.style.left = `${playerX}px`;
+        });
+
+        let isTouching = false;
+        
+        gameArea.addEventListener('touchstart', (e) => {
+            isTouching = true;
+            e.preventDefault();
+        });
+        
+        gameArea.addEventListener('touchmove', (e) => {
+            if (!isTouching || !gameActive) return;
+            
+            const rect = gameArea.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            
+            const containerWidth = playerContainer.offsetWidth;
+            const maxX = gameArea.offsetWidth - containerWidth / 2;
+            
+            playerX = Math.max(containerWidth / 2, Math.min(touchX, maxX));
+            playerContainer.style.left = `${playerX}px`;
+            
+            e.preventDefault();
+        });
+        
+        gameArea.addEventListener('touchend', (e) => {
+            isTouching = false;
+            e.preventDefault();
+        });
+
+        bananaBtn.addEventListener('click', startGame);
+        gameExitBtn.addEventListener('click', exitGame);
+        restartBtn.addEventListener('click', startGame);
+        restartWinBtn.addEventListener('click', startGame);
+
+        function startGame() {
+            if (!gameInitialized) {
+                initializeGame();
+            }
+            
+            stopMainAnimations();
+            
+            score = 0;
+            misses = 0;
+            speed = 3;
+            gameActive = true;
+            
+            gameScore.textContent = `Очки: ${score}`;
+            gameMisses.textContent = `Промахи: ${misses}/3`;
+            
+            gameArea.innerHTML = `
+                <div class="player-container" id="playerContainer">
+                    <div class="player-mouth" id="playerMouth">👄</div>
+                    <div class="player-name">Жека</div>
+                </div>
+            `;
+            
+            playerContainer = document.getElementById('playerContainer');
+            playerX = gameArea.offsetWidth / 2;
+            playerContainer.style.left = `${playerX}px`;
+            
+            gameOver.style.display = 'none';
+            gameWin.style.display = 'none';
+            
+            gameScreen.classList.add('active');
+            
+            fruitInterval = setInterval(createFruit, 800);
+            
+            setTimeout(() => {
+                if (gameActive && speed < maxSpeed) {
+                    speed += 0.5;
+                }
+            }, 5000);
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function exitGame() {
+            clearInterval(fruitInterval);
+            gameActive = false;
+            gameScreen.classList.remove('active');
+            fruits = [];
+            resumeMainAnimations();
+        }
+
+        function createFruit() {
+            if (!gameActive) return;
+            
+            const fruit = document.createElement('div');
+            const isEggplant = Math.random() < 0.05;
+            
+            fruit.className = 'fruit';
+            fruit.innerHTML = isEggplant ? '🍆' : '🍌';
+            fruit.dataset.type = isEggplant ? 'eggplant' : 'banana';
+            
+            const maxX = gameArea.offsetWidth - 40;
+            const posX = Math.floor(Math.random() * maxX);
+            
+            fruit.style.left = `${posX}px`;
+            fruit.style.top = '0px';
+            
+            gameArea.appendChild(fruit);
+            
+            fruits.push({
+                element: fruit,
+                x: posX,
+                y: 0,
+                isEggplant: isEggplant,
+                caught: false
+            });
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            const areaHeight = gameArea.offsetHeight;
+            const containerRect = playerContainer.getBoundingClientRect();
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            const containerLeft = containerRect.left - gameAreaRect.left;
+            const containerRight = containerLeft + containerRect.width;
+            
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                const fruit = fruits[i];
+                
+                if (fruit.caught) continue;
+                
+                fruit.y += speed;
+                fruit.element.style.top = `${fruit.y}px`;
+                
+                const fruitWidth = fruit.element.offsetWidth;
+                const fruitLeft = fruit.x;
+                const fruitRight = fruitLeft + fruitWidth;
+                
+                if (fruit.y + 40 >= areaHeight - 70 && 
+                    !(fruitRight < containerLeft || fruitLeft > containerRight)) {
+                    
+                    if (fruit.isEggplant) {
+                        score += 100;
+                    } else {
+                        score += 10;
+                    }
+                    
+                    gameScore.textContent = `Очки: ${score}`;
+                    
+                    fruit.element.style.transform = 'scale(1.5)';
+                    fruit.element.style.opacity = '0.5';
+                    fruit.caught = true;
+                    
+                    setTimeout(() => {
+                        if (fruit.element.parentNode) {
+                            gameArea.removeChild(fruit.element);
+                        }
+                    }, 200);
+                    
+                    fruits.splice(i, 1);
+                    
+                    if (score >= 10000) {
+                        winGame();
+                    }
+                    
+                    continue;
+                }
+                
+                if (fruit.y > areaHeight) {
+                    if (!fruit.isEggplant) {
+                        misses++;
+                        gameMisses.textContent = `Промахи: ${misses}/3`;
+                        
+                        if (misses >= 3) {
+                            loseGame();
+                        }
+                    }
+                    
+                    if (fruit.element.parentNode) {
+                        gameArea.removeChild(fruit.element);
+                    }
+                    fruits.splice(i, 1);
+                }
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function loseGame() {
+            clearInterval(fruitInterval);
+            gameActive = false;
+            gameOver.style.display = 'flex';
+        }
+
+        function winGame() {
+            clearInterval(fruitInterval);
+            gameActive = false;
+            gameWin.style.display = 'flex';
+            createWinConfetti();
+        }
+
+        function createWinConfetti() {
+            const colors = ['#ffd700', '#ffba00', '#ffa500', '#ff6b6b', '#ee5a24'];
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                const size = Math.random() * 10 + 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const posX = gameAreaRect.left + Math.random() * gameAreaRect.width;
+                const posY = gameAreaRect.top + Math.random() * gameAreaRect.height;
+                
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size * 1.5}px`;
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${posX}px`;
+                confetti.style.top = `${posY}px`;
+                confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                counterElement.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                mainText.classList.add('show');
+            }, 300);
+            
+            setTimeout(() => {
+                clickPrompt.classList.add('show');
+            }, 500);
+            
+            setTimeout(() => {
+                bananaBtn.classList.add('show');
+            }, 700);
+            
+            setTimeout(() => {
+                footerEl.classList.add('show');
+            }, 900);
+            
+            setTimeout(() => {
+                requestAnimationFrame(animateGradient);
+            }, 1100);
+            
+            setTimeout(() => {
+                createParticles();
+            }, 1300);
+            
+            setTimeout(() => {
+                mainText.classList.add('animated');
+            }, 1500);
+            
+            setTimeout(() => {
+                bananaBtn.classList.add('animated');
+            }, 1700);
+            
+            setTimeout(() => {
+                initializeGame();
+            }, 2000);
+        });
+    </script>
+</body>
+  </html>
