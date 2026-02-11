@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Забананиться</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .sound-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            z-index: 31;
+            transition: transform 0.2s ease;
+        }
+
+        .sound-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 15px;            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #ffd700;
+            font-size: 1.2rem;
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: none;
+            cursor: pointer;
+            z-index: 32;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .game-screen {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .game-header {
+            position: absolute;
+            top: 15px;
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .game-score, .game-misses {
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .game-area {
+            width: 90%;
+            max-width: 350px;
+            aspect-ratio: 3/4;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 15px;
+            position: relative;            overflow: hidden;
+        }
+
+        .fruit {
+            position: absolute;
+            font-size: 2rem;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .player-container {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .player-mouth {
+            font-size: 3rem;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .player-mouth.black-hole {
+            font-size: 6rem;
+            border-radius: 50%;
+            background: radial-gradient(circle, #000 0%, #333 70%, #000 100%);
+            color: transparent;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.8),
+                        inset 0 0 40px rgba(0, 0, 0, 0.9);
+        }
+
+        .player-mouth:active {
+            cursor: grabbing;
+        }
+
+        .player-name {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-top: 5px;
+        }
+
+        .player-name.special {
+            color: #ff0000;
+            font-size: 1.2rem;            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            animation: pulseRed 0.5s infinite;
+        }
+
+        @keyframes pulseRed {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .game-btn {
+            margin-top: 25px;
+            padding: 12px 35px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .game-over h1 {
+            font-size: 4rem;
+            color: #ff0000;
+            margin-bottom: 25px;
+        }
+
+        .game-over p {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 35px;
+        }
+
+        .game-win {
+            position: absolute;
+            top: 0;            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .game-win h1 {
+            font-size: 3.5rem;
+            color: #000;
+            margin-bottom: 10px;
+        }
+
+        .game-win p {
+            font-size: 1.6rem;
+            color: #000;
+            margin-bottom: 35px;
+        }
+
+        @media (max-width: 360px) {
+            .game-area {
+                max-width: 300px;
+            }
+            
+            .player-mouth {
+                font-size: 2.5rem;
+            }
+            
+            .player-mouth.black-hole {
+                font-size: 5rem;
+            }
+        }
+
+        .confetti {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            animation: confettiFall 4s ease-in-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head><body>
+    <audio id="backgroundMusic" loop>
+        <source src="123.mp3" type="audio/mpeg">
+    </audio>
+    
+    <button class="sound-btn" id="soundBtn">🔊</button>
+    <button class="back-btn" onclick="window.location.href='index.html'">🏠 Меню</button>
+
+    <div class="game-screen" id="gameScreen">
+        <div class="game-header">
+            <div class="game-score" id="gameScore">Очки: 0</div>
+            <div class="game-misses" id="gameMisses">Промахи: 0/3</div>
+        </div>
+        <div class="game-area" id="gameArea">
+            <div class="player-container" id="playerContainer">
+                <div class="player-mouth" id="playerMouth">👄</div>
+                <div class="player-name" id="playerName">Жека</div>
+            </div>
+        </div>
+        <button class="game-btn" id="gameExitBtn">Выйти</button>
+        
+        <div class="game-over" id="gameOver">
+            <h1>ты соснул.</h1>
+            <p>вы проиграли</p>
+            <button class="game-btn" id="restartBtn">Ещё раз</button>
+        </div>
+        
+        <div class="game-win" id="gameWin">
+            <h1>Жека соснул</h1>
+            <p>вы победили</p>
+            <button class="game-btn" id="restartWinBtn">Ещё раз</button>
+        </div>
+    </div>
+
+    <script>
+        const audio = document.getElementById('backgroundMusic');
+        const soundBtn = document.getElementById('soundBtn');
+        let isMuted = localStorage.getItem('isMuted') === 'true' || false;
+        
+        function updateSoundButton() {
+            soundBtn.textContent = isMuted ? '🔇' : '🔊';
+            audio.muted = isMuted;
+        }
+        
+        function toggleSound() {
+            isMuted = !isMuted;
+            localStorage.setItem('isMuted', isMuted);
+            updateSoundButton();
+        }
+                soundBtn.addEventListener('click', toggleSound);
+        
+        document.addEventListener('click', function initAudio() {
+            audio.play().catch(e => console.log('Audio play error:', e));
+            document.removeEventListener('click', initAudio);
+        }, { once: true });
+
+        const gameScreen = document.getElementById('gameScreen');
+        const gameArea = document.getElementById('gameArea');
+        const gameScore = document.getElementById('gameScore');
+        const gameMisses = document.getElementById('gameMisses');
+        const gameExitBtn = document.getElementById('gameExitBtn');
+        const gameOver = document.getElementById('gameOver');
+        const gameWin = document.getElementById('gameWin');
+        const restartBtn = document.getElementById('restartBtn');
+        const restartWinBtn = document.getElementById('restartWinBtn');
+
+        let score = 0;
+        let misses = 0;
+        let gameActive = false;
+        let fruitInterval;
+        let speed = 3;
+        let maxSpeed = 10;
+        let playerX = 0;
+        let playerContainer = null;
+        let fruits = [];
+        let bananaCount = 0;
+        let bombMode = false;
+        let bombTimer = null;
+
+        gameArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        });
+        
+        gameArea.addEventListener('touchmove', (e) => {
+            if (!gameActive) return;
+            
+            const rect = gameArea.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            
+            const containerWidth = playerContainer.offsetWidth;
+            const maxX = gameArea.offsetWidth - containerWidth / 2;
+            
+            playerX = Math.max(containerWidth / 2, Math.min(touchX, maxX));
+            playerContainer.style.left = `${playerX}px`;
+            
+            e.preventDefault();
+        });
+        
+        gameArea.addEventListener('touchend', (e) => {            e.preventDefault();
+        });
+
+        gameExitBtn.addEventListener('click', exitGame);
+        restartBtn.addEventListener('click', startGame);
+        restartWinBtn.addEventListener('click', startGame);
+
+        function startGame() {
+            score = 0;
+            misses = 0;
+            speed = 3;
+            bananaCount = 0;
+            bombMode = false;
+            gameActive = true;
+            
+            gameScore.textContent = `Очки: ${score}`;
+            gameMisses.textContent = `Промахи: ${misses}/3`;
+            
+            gameArea.innerHTML = `
+                <div class="player-container" id="playerContainer">
+                    <div class="player-mouth" id="playerMouth">👄</div>
+                    <div class="player-name" id="playerName">Жека</div>
+                </div>
+            `;
+            
+            playerContainer = document.getElementById('playerContainer');
+            playerX = gameArea.offsetWidth / 2;
+            playerContainer.style.left = `${playerX}px`;
+            
+            gameOver.style.display = 'none';
+            gameWin.style.display = 'none';
+            
+            gameScreen.classList.add('active');
+            
+            setTimeout(() => {
+                if (gameActive) {
+                    fruitInterval = setInterval(createFruit, 690);
+                }
+            }, 300);
+            
+            setTimeout(() => {
+                if (gameActive && speed < maxSpeed) {
+                    speed += 0.3;
+                }
+            }, 5000);
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function exitGame() {            clearInterval(fruitInterval);
+            if (bombTimer) clearTimeout(bombTimer);
+            bombMode = false;
+            gameActive = false;
+            gameScreen.classList.remove('active');
+            fruits = [];
+            window.location.href = 'index.html';
+        }
+
+        function createFruit() {
+            if (!gameActive || !gameArea) return;
+            
+            const areaWidth = gameArea.offsetWidth;
+            if (areaWidth < 50) return;
+            
+            let fruitType;
+            const rand = Math.random();
+            
+            if (rand < 0.005 && !bombMode) {
+                fruitType = 'bomb';
+            } 
+            else if (bombMode || rand < 0.055) {
+                fruitType = 'eggplant';
+            }
+            else if (bananaCount >= 2) {
+                fruitType = 'peach';
+                bananaCount = 0;
+            }
+            else {
+                fruitType = 'banana';
+                bananaCount++;
+            }
+            
+            const fruit = document.createElement('div');
+            fruit.className = 'fruit';
+            
+            switch(fruitType) {
+                case 'banana': fruit.innerHTML = '🍌'; break;
+                case 'peach': fruit.innerHTML = '🍑'; break;
+                case 'bomb': fruit.innerHTML = '💣'; break;
+                case 'eggplant': fruit.innerHTML = '🍆'; break;
+            }
+            
+            fruit.dataset.type = fruitType;
+            
+            const maxX = areaWidth - 30;
+            const posX = Math.floor(Math.random() * Math.max(10, maxX));
+            
+            fruit.style.left = `${posX}px`;
+            fruit.style.top = '0px';            
+            gameArea.appendChild(fruit);
+            
+            fruits.push({
+                element: fruit,
+                x: posX,
+                y: 0,
+                type: fruitType,
+                caught: false
+            });
+        }
+
+        function activateBombMode() {
+            bombMode = true;
+            const playerMouth = document.getElementById('playerMouth');
+            const playerName = document.getElementById('playerName');
+            if (playerMouth) playerMouth.classList.add('black-hole');
+            if (playerName) {
+                playerName.textContent = "ЖЕКА РАСКРЫЛ ОЧКО";
+                playerName.classList.add('special');
+            }
+            
+            bombTimer = setTimeout(() => {
+                bombMode = false;
+                const playerMouth = document.getElementById('playerMouth');
+                const playerName = document.getElementById('playerName');
+                if (playerMouth) playerMouth.classList.remove('black-hole');
+                if (playerName) {
+                    playerName.textContent = "Жека";
+                    playerName.classList.remove('special');
+                }
+            }, 5000);
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            const areaHeight = gameArea.offsetHeight;
+            const containerRect = playerContainer.getBoundingClientRect();
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            const containerLeft = containerRect.left - gameAreaRect.left;
+            const containerRight = containerLeft + containerRect.width;
+            
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                const fruit = fruits[i];
+                
+                if (fruit.caught) continue;
+                
+                fruit.y += speed;                fruit.element.style.top = `${fruit.y}px`;
+                
+                const fruitWidth = fruit.element.offsetWidth;
+                const fruitLeft = fruit.x;
+                const fruitRight = fruitLeft + fruitWidth;
+                
+                if (fruit.y + 30 >= areaHeight - 50 && 
+                    !(fruitRight < containerLeft || fruitLeft > containerRight)) {
+                    
+                    switch(fruit.type) {
+                        case 'banana':
+                            score += bombMode ? 20 : 10;
+                            break;
+                        case 'eggplant':
+                            score += 100;
+                            break;
+                        case 'peach':
+                            misses++;
+                            gameMisses.textContent = `Промахи: ${misses}/3`;
+                            if (misses >= 3) {
+                                loseGame();
+                                return;
+                            }
+                            break;
+                        case 'bomb':
+                            activateBombMode();
+                            break;
+                    }
+                    
+                    gameScore.textContent = `Очки: ${score}`;
+                    
+                    fruit.element.style.transform = 'scale(1.3)';
+                    fruit.element.style.opacity = '0.5';
+                    fruit.caught = true;
+                    
+                    setTimeout(() => {
+                        if (fruit.element.parentNode) {
+                            gameArea.removeChild(fruit.element);
+                        }
+                    }, 200);
+                    
+                    fruits.splice(i, 1);
+                    
+                    if (score >= 10000) {
+                        winGame();
+                    }
+                    
+                    continue;
+                }
+                                if (fruit.y > areaHeight) {
+                    if (fruit.type === 'banana' || fruit.type === 'peach') {
+                        if (fruit.type === 'banana') {
+                            misses++;
+                            gameMisses.textContent = `Промахи: ${misses}/3`;
+                            
+                            if (misses >= 3) {
+                                loseGame();
+                                return;
+                            }
+                        }
+                    }
+                    
+                    if (fruit.element.parentNode) {
+                        gameArea.removeChild(fruit.element);
+                    }
+                    fruits.splice(i, 1);
+                }
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function loseGame() {
+            clearInterval(fruitInterval);
+            if (bombTimer) clearTimeout(bombTimer);
+            bombMode = false;
+            gameActive = false;
+            gameOver.style.display = 'flex';
+        }
+
+        function winGame() {
+            clearInterval(fruitInterval);
+            if (bombTimer) clearTimeout(bombTimer);
+            bombMode = false;
+            gameActive = false;
+            gameWin.style.display = 'flex';
+            createWinConfetti();
+        }
+
+        function createWinConfetti() {
+            const colors = ['#ffd700', '#ffba00', '#ffa500', '#ff6b6b', '#ee5a24'];
+            const gameAreaRect = gameArea.getBoundingClientRect();
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                const size = Math.random() * 8 + 3;
+                const color = colors[Math.floor(Math.random() * colors.length)];                const posX = gameAreaRect.left + Math.random() * gameAreaRect.width;
+                const posY = gameAreaRect.top + Math.random() * gameAreaRect.height;
+                
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size * 1.5}px`;
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${posX}px`;
+                confetti.style.top = `${posY}px`;
+                confetti.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSoundButton();
+            startGame();
+        });
+    </script>
+</body>
+</html>
